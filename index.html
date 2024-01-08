@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        #ball {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: red;
+            border-radius: 50%;
+        }
+        #paddle {
+            position: absolute;
+            bottom: 0;
+            width: 100px;
+            height: 20px;
+            background: blue;
+        }
+        .brick {
+            position: absolute;
+            width: 50px;
+            height: 20px;
+            background: green;
+        }
+        #scoreboard {
+            position: absolute;
+            top: 0;
+            right: 0;
+            padding: 10px;
+            background: lightgray;
+        }
+        #pauseMenu {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            padding: 20px;
+            background: lightgray;
+        }
+    </style>
+</head>
+<body>
+    <div id="ball"></div>
+    <div id="paddle"></div>
+    <div id="bricks"></div>
+    <div id="scoreboard">
+        Score: <span id="score">0</span><br>
+        Lives: <span id="lives">3</span><br>
+        Time: <span id="time">0</span>s
+    </div>
+    <div id="pauseMenu">
+        <button id="continue">Continue</button>
+        <button id="restart">Restart</button>
+    </div>
+
+    <script>
+var ball = document.getElementById('ball');
+var paddle = document.getElementById('paddle');
+var bricks = document.getElementById('bricks');
+var scoreElement = document.getElementById('score');
+var livesElement = document.getElementById('lives');
+var timeElement = document.getElementById('time');
+var pauseMenu = document.getElementById('pauseMenu');
+var continueButton = document.getElementById('continue');
+var restartButton = document.getElementById('restart');
+var score = 0;
+var lives = 3;
+var startTime = Date.now();
+var paused = false;
+var ballDir = [2, 2];
+var paddleSpeed = 2;
+var paddleDir = 0;
+var animationFrameId;
+
+for (var i = 0; i < 10; i++) {
+    var brick = document.createElement('div');
+    brick.className = 'brick';
+    brick.style.left = (i * 55) + 'px';
+    bricks.appendChild(brick);
+}
+
+function gameLoop() {
+    if (paused) return;
+    var ballRect = ball.getBoundingClientRect();
+    var paddleRect = paddle.getBoundingClientRect();
+
+    ball.style.left = (ballRect.left + ballDir[0]) + 'px';
+    ball.style.top = (ballRect.top + ballDir[1]) + 'px';
+
+    if (ballRect.left < 0 || ballRect.right > window.innerWidth) ballDir[0] *= -1;
+    if (ballRect.top < 0) ballDir[1] = Math.abs(ballDir[1]);
+    if (ballRect.bottom > window.innerHeight) {
+        lives--;
+        if (lives === 0) {
+            alert('Game Over');
+            return;
+        } else {
+            ball.style.top = '0';
+            ballDir[1] = Math.abs(ballDir[1]);
+        }
+    }
+
+    paddle.style.left = (paddleRect.left + paddleSpeed * paddleDir) + 'px';
+
+    if (paddleRect.left < 0) paddle.style.left = '0';
+    if (paddleRect.right > window.innerWidth) paddle.style.left = (window.innerWidth - paddleRect.width) + 'px';
+
+    if (ballRect.bottom > paddleRect.top && ballRect.bottom < paddleRect.bottom && ballRect.right > paddleRect.left && ballRect.left < paddleRect.right) ballDir[1] *= -1;
+
+    var bricksRect = bricks.getBoundingClientRect();
+    var brickElements = document.getElementsByClassName('brick');
+
+    for (var i = 0; i < brickElements.length; i++) {
+        var brickRect = brickElements[i].getBoundingClientRect();
+
+        if (ballRect.bottom > brickRect.top && ballRect.top < brickRect.bottom && ballRect.right > brickRect.left && ballRect.left < brickRect.right) {
+            ballDir[1] *= -1;
+            bricks.removeChild(brickElements[i]);
+            score++;
+            break;
+        }
+    }
+
+    timeElement.textContent = ((Date.now() - startTime) / 1000).toFixed(2);
+    scoreElement.textContent = score;
+    livesElement.textContent = lives;
+
+    animationFrameId = requestAnimationFrame(gameLoop);
+}
+
+function pauseGame() {
+    paused = true;
+    pauseMenu.style.display = 'block';
+    cancelAnimationFrame(animationFrameId);
+}
+
+function continueGame() {
+    paused = false;
+    pauseMenu.style.display = 'none';
+    animationFrameId = requestAnimationFrame(gameLoop);
+}
+
+function restartGame() {
+    score = 0;
+    lives = 3;
+    startTime = Date.now();
+    paused = false;
+    ballDir = [2, 2];
+    paddleSpeed = 2;
+    paddleDir = 0;
+    ball.style.left = '0';
+    ball.style.top = '0';
+    paddle.style.left = '0';
+    while (bricks.firstChild) {
+        bricks.removeChild(bricks.firstChild);
+    }
+    for (var i = 0; i < 10; i++) {
+        var brick = document.createElement('div');
+        brick.className = 'brick';
+        brick.style.left = (i * 55) + 'px';
+        bricks.appendChild(brick);
+    }
+    cancelAnimationFrame(animationFrameId);
+    animationFrameId = requestAnimationFrame(gameLoop);
+}
+
+continueButton.addEventListener('click', continueGame);
+restartButton.addEventListener('click', restartGame);
+
+window.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') pauseGame();
+    if (e.key === 'ArrowLeft') paddleDir = -1;
+    if (e.key === 'ArrowRight') paddleDir = 1;
+});
+
+window.addEventListener('keyup', function(e) {
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') paddleDir = 0;
+});
+
+animationFrameId = requestAnimationFrame(gameLoop);
+    </script>
+</body>
+</html>
